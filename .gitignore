@@ -1,0 +1,11 @@
+# Ignore compiled games and object files
+*.exe
+*.o
+
+# Ignore the bulky downloaded SDL library folders
+SDL2_image-*/
+SDL2_mixer-*/
+SDL2_ttf-*/
+
+# Ignore IDE temporary folders
+.vscode/
