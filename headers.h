@@ -114,3 +114,19 @@ private:
     int mWidth, mHeight;
 };
 
+class Player {
+public:
+    Player(LTexture* LT, SDL_Rect r) : PLTexture(LT), rect(r){}
+    ~Player(){   }
+    
+    void walk(int dir, int x_step, int y_step){
+        if(dir == 1) { rect.x += x_step; rect.y += y_step; }
+    }
+    
+    void show(){ 
+        if (PLTexture != NULL) {  PLTexture->renderScaled(&rect); }
+    }
+private:
+    LTexture* PLTexture; 
+    SDL_Rect rect;
+};

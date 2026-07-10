@@ -1,7 +1,7 @@
 #include "headers.h"
 #include "textures.h"
+
 int main(int argc, char* argv[]) {
-    // 1. Initialize SDL Subsystems
     SDL_Init(SDL_INIT_VIDEO);
     IMG_Init(IMG_INIT_PNG);
     TTF_Init();
@@ -18,10 +18,13 @@ int main(int argc, char* argv[]) {
     SDL_Event e;
     Uint32 startTime = 0;
     stringstream timeText;
+    SDL_Rect playerBox = { 100, 100, 25, 90 }; 
+    Player player1( &swordTexture, playerBox);
 
     while (running) {
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_QUIT || (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_q)) running = false;
+            else if (e.key.keysym.sym == SDLK_o) player1.walk(1, 0, 5);
         }
 
         SDL_GetMouseState(&mx, &my);
@@ -34,10 +37,13 @@ int main(int argc, char* argv[]) {
         + ", time = " + to_string( SDL_GetTicks() - startTime );
         textTexture.loadFromRenderedText(mouseStr, textColor);
         textTexture.render(50, 50);
-        emojiTexture.renderScaled( &smiley );
+        //emojiTexture.renderScaled( &smiley );
         
         SDL_Rect swords = { mx - 12, my - 45, 25, 90 };
         swordTexture.renderScaled(&swords);
+        
+         
+        player1.show();       
 
         SDL_RenderPresent(gRenderer);
     }
