@@ -1,0 +1,1 @@
+g++ SDL_main.cpp -o SDL_main.exe -IC:\msys64\ucrt64\include\SDL2 -LC:\msys64\ucrt64\lib -lmingw32 -lSDL2main -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -mwindows
