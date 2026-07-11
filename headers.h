@@ -10,50 +10,34 @@ int mx, my, state = 1, steps;
 
 char ch;
 using namespace std;
-const int screenWidth = 800, screenHeight = 600, stepsMax = 20;
+const int boardWidth = 528, boardHeight = 475, screenWidth = 1000, screenHeight = 600, stepsMax = 20;
 
 SDL_Renderer* gRenderer = NULL;
 TTF_Font* gFont = NULL;
 SDL_Window* window = NULL;
 
-// 1-based arrays containing the coordinates for all 37 hexagons
 int xcoord[40] = {
-    0, // Index 0 (unused)
-    // Row 1 (4 hexagons)
-    230, 345, 460, 575,
-    // Row 2 (5 hexagons)
-    173, 288, 403, 518, 633,
-    // Row 3 (6 hexagons)
-    115, 230, 345, 460, 575, 690,
-    // Row 4 (7 hexagons)
-    58,  173, 288, 403, 518, 633, 748,
-    // Row 5 (6 hexagons)
-    115, 230, 345, 460, 575, 690,
-    // Row 6 (5 hexagons)
-    173, 288, 403, 518, 633,
-    // Row 7 (4 hexagons)
-    230, 345, 460, 575
+    0,
+    150, 226, 302, 378,
+    113, 189, 265, 340, 416,
+    75, 150, 226, 302, 378, 454,
+    37, 113, 189, 265, 340, 416, 492,
+    75, 150, 226, 302, 378, 454,
+    113, 189, 265, 340, 416,
+    150, 226, 302, 378,
 };
 
 int ycoord[40] = {
-    0, // Index 0 (unused)
-    // Row 1
-    50,  50,  50,  50,
-    // Row 2
-    133, 133, 133, 133, 133,
-    // Row 3
-    215, 215, 215, 215, 215, 215,
-    // Row 4
-    298, 298, 298, 298, 298, 298, 298,
-    // Row 5
-    380, 380, 380, 380, 380, 380,
-    // Row 6
-    463, 463, 463, 463, 463,
-    // Row 7
-    545, 545, 545, 545
+    0,
+    42, 42, 43, 43,
+    107, 108, 108, 108, 109,
+    172, 172, 172, 173, 173, 173,
+    237, 237, 238, 238, 238, 239, 239,
+    302, 302, 302, 303, 303, 303,
+    367, 368, 368, 368, 369,
+    432, 432, 433, 433,
 };
 
-// columns: 1=UpperRight, 2=Right, 3=LowerRight, 4=LowerLeft, 5=Left, 6=UpperLeft
 int adja[40][7] = {
     {0, 0,  0,  0,  0,  0,  0}, // Index 0 (unused)
 
@@ -202,6 +186,10 @@ public:
         SDL_RenderCopy(gRenderer, mTexture, clip, Scaled);
     }
 
+    void renderScaledRotated(SDL_Rect* dest, double angle = 0.0, SDL_Rect* clip = NULL, SDL_Point* center = NULL, SDL_RendererFlip flip = SDL_FLIP_NONE){
+        if (!mTexture || !dest) return;
+        SDL_RenderCopyEx(gRenderer, mTexture, clip, dest, angle, center, flip);
+    }   //usage:swordTexture.renderScaledRotated(&rect, 45.0);
     int getWidth() { return mWidth; }
     int getHeight() { return mHeight; }
 
@@ -213,9 +201,10 @@ private:
 class Player {
 public:
     int sp, dp; //starting point, destination
+    int sa, da; // starting angle, destination
     Player(LTexture* LT, SDL_Rect r, int Sp) : PLTexture(LT), sp(Sp){
-        rect.x = xcoord[Sp] - rect.w / 2; rect.y = ycoord[Sp] - rect.h/2;  
-        rect.w = r.w; rect.h = r.h;
+        rect.x = xcoord[Sp] - rect.w / 2; rect.y = ycoord[Sp] - rect.h / 2;  
+        rect.w = r.w; rect.h = r.h;  ang = 30;
     }
     ~Player(){   }
     
@@ -223,15 +212,26 @@ public:
         rect.x = steps *(xcoord[dp]-xcoord[sp] )/stepsMax + xcoord[sp] - rect.w / 2; 
         rect.y = steps *(ycoord[dp]-ycoord[sp] )/stepsMax + ycoord[sp] - rect.h/2 ;      //steps is 1 to 100
     }
+    void turn(int steps){
+        ang = steps *(da-sa)/stepsMax + sa;
+    }
     
-    void show(){    if (PLTexture != NULL) {  PLTexture->renderScaled(&rect); }  }
-    void setdir(int d){   dirq.push(d); if( adja[sp][dirq.front()] > 0) {
-        dp = adja[sp][dirq.front()]; dirq.pop();  }}
+    void show(){    if (PLTexture != NULL) {  PLTexture->renderScaledRotated(&rect, ang ); }  }
+    void pushdir(int d){   
+        dirq.push(d); 
+        if( adja[sp][dirq.front()] > 0 && adja[sp][dirq.front()] <=6 ) {   
+            dp = adja[sp][dirq.front()]; dirq.pop();  
+        }
+        else if( adja[sp][dirq.front()] > 6 && adja[sp][dirq.front()] <=12 ) {   
+            da = (dirq.front() - 6)*60 - 30; dirq.pop();  
+        }
+    }
+    int getfront(){ return dirq.front(); }
     void arrived(){ sp = dp;  }
 
 private:
     LTexture* PLTexture; 
     SDL_Rect rect;
-    int dir; // 1~6
+    int ang; // 1~6
     queue<int> dirq;
 };
