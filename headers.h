@@ -204,7 +204,8 @@ public:
     int sa, da; // starting angle, destination
     Player(LTexture* LT, SDL_Rect r, int Sp) : PLTexture(LT), sp(Sp){
         rect.x = xcoord[Sp] - rect.w / 2; rect.y = ycoord[Sp] - rect.h / 2;  
-        rect.w = r.w; rect.h = r.h;  ang = 30;
+        rect.w = r.w; rect.h = r.h;  ang = 30; dirq.push_back(0);
+        sa = 0;
     }
     ~Player(){   }
     
@@ -217,21 +218,33 @@ public:
     }
     
     void show(){    if (PLTexture != NULL) {  PLTexture->renderScaledRotated(&rect, ang ); }  }
-    void pushdir(int d){   
-        dirq.push(d); 
-        if( adja[sp][dirq.front()] > 0 && adja[sp][dirq.front()] <=6 ) {   
-            dp = adja[sp][dirq.front()]; dirq.pop();  
+    void pushdir(int d){  dirq.push_back(d); }
+    // returns 0 = nothing valid to do (queue empty or invalid move), 1 = move started, 2 = rotate started
+    int set(){
+        if (dirq.empty()) return 0;
+        int d = dirq.front();
+        dirq.pop_front();
+        if (d >= 1 && d <= 6) {
+            if (adja[sp][d] > 0) {
+                dp = adja[sp][d];
+                return 1;
+            }
+            return 0;   // invalid move — discarded, nothing happens this frame
         }
-        else if( adja[sp][dirq.front()] > 6 && adja[sp][dirq.front()] <=12 ) {   
-            da = (dirq.front() - 6)*60 - 30; dirq.pop();  
+        else if (d >= 7 && d <= 12) {
+            sa = ang;                      // fixes Bug 2 — start from current angle
+            da = (d - 6) * 60 - 30;
+            return 2;
         }
+        return 0;
     }
-    int getfront(){ return dirq.front(); }
-    void arrived(){ sp = dp;  }
+    int getfront(){ if (dirq.empty()){ return 0;}
+    else return dirq.front(); }
+    void arrived(){ sp = dp;   }
 
 private:
     LTexture* PLTexture; 
     SDL_Rect rect;
     int ang; // 1~6
-    queue<int> dirq;
+    deque<int> dirq;
 };

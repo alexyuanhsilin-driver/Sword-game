@@ -30,36 +30,44 @@ int main(int argc, char* argv[]) {
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_QUIT || (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_q)) running = false;
 
-            if (e.type == SDL_KEYDOWN && getdir(e.key.keysym) <= 6){
+            if (state == State::Building && e.type == SDL_KEYDOWN && getdir(e.key.keysym) <= 6){
                 player1.pushdir( getdir(e.key.keysym) );
-                if( state == State::Setting ){
-                    state = 2;
-                    steps = 0;
-                }
             }
-            // else if (e.type == SDL_KEYDOWN && getdir(e.key.keysym) <= 12){
-            //     player1.turn( getdir(e.key.keysym) );
-            // }
+            else if( state == State::Building && e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_RETURN ){  state = State::Setting;  }
         }
-        if( state == State::Moving){
+        if (state == State::Setting) {
+            steps = 0;
+            int t = player1.set(); 
+            if (t == 0) state = State::Building;
+            else if (t == 1) state = State::Moving;
+            else if (t == 2) state = State::Rotating;// result == 0: invalid or empty queue — just stay in Setting, try again next frame
+        }       
+        if ( state == State::Moving){
             player1.walk( steps ); 
-            if( steps == stepsMax ) {state = 1; player1.arrived(); }
+            if( steps == stepsMax ) {
+                player1.arrived();
+                steps = 0;
+                if( player1.getfront() == 0) state = State::Building; 
+                else state = State::Setting;
+            }
             else steps++;
         }
-        else if( state == State::Rotating){
-            player1.turn( steps ); 
-            if( steps == stepsMax ) {state = 1; player1.arrived(); }
-            else steps++;
-        }
+        // else if( state == State::Rotating){
+        //     player1.turn( steps ); 
+        //     if( steps == stepsMax ) {state = 1; player1.arrived(); }
+        //     else steps++;
+        // }
         SDL_GetMouseState(&mx, &my);
         SDL_RenderClear(gRenderer);
         SDL_SetRenderDrawColor(gRenderer, 60, 150, 150, 255);
         
         boardTexture.renderScaled(&board);
-        std::string mouseStr = "x = " + std::to_string(mx) + ", y = " + std::to_string(my) 
-        + ", time = " + to_string( SDL_GetTicks() - startTime );
+        std::string mouseStr = //"x = " + std::to_string(mx) + ", y = " + std::to_string(my) +
+        //", time = " + to_string( SDL_GetTicks() - startTime ) + 
+        " dirq.front = "+ to_string(player1.getfront()) + " state = "+ to_string(state);
+
         textTexture.loadFromRenderedText(mouseStr, textColor);
-        textTexture.render(boardWidth, 10);
+        textTexture.render(450, 10);
         //emojiTexture.renderScaled( &smiley );
         
         SDL_Rect swords = { mx - 12, my - 45, 25, 90 };
