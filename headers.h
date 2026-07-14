@@ -204,7 +204,7 @@ public:
     int sa, da; // starting angle, destination
     Player(LTexture* LT, SDL_Rect r, int Sp) : PLTexture(LT), sp(Sp){
         rect.x = xcoord[Sp] - rect.w / 2; rect.y = ycoord[Sp] - rect.h / 2;  
-        rect.w = r.w; rect.h = r.h;  ang = 30; dirq.push_back(0);
+        rect.w = r.w; rect.h = r.h;  ang = 30; dirq.push_back(100000);
         sa = 0;
     }
     ~Player(){   }
@@ -234,6 +234,8 @@ public:
         else if (d >= 7 && d <= 12) {
             sa = ang;                      // fixes Bug 2 — start from current angle
             da = (d - 6) * 60 - 30;
+            if (abs(da - sa + 360) <= 180) sa = ang - 360;
+            else if (abs(da- sa - 360) <= 180) sa = ang + 360;
             return 2;
         }
         return 0;
@@ -247,4 +249,28 @@ private:
     SDL_Rect rect;
     int ang; // 1~6
     deque<int> dirq;
+friend class Queue;
+};
+
+class Queue{
+    public:
+    Queue(LTexture* l,  int x, int y):parrowTexture(l){
+        arr[0] = { x, y, squareW, squareW};
+        for(int i=1; i<10; i++){
+            arr[i] = arr[i-1];
+            arr[i].x = arr[i-1].x + arr[i-1].w;
+        }
+    }
+    ~Queue(){   }
+    void show( const Player& p ){ 
+        if (p.dirq.empty()) return;
+        for (size_t i = 0; i < p.dirq.size() && i < 10; i++) {
+            parrowTexture->renderScaledRotated( &arr[i], p.dirq[i]*60 - 120);
+        }
+    }
+    
+private:
+    SDL_Rect arr[10];
+    const int squareW = 50, squareH = 50;
+    LTexture *parrowTexture;
 };

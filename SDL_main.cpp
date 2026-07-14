@@ -14,6 +14,7 @@ void start(){
     swordTexture.loadFromFile("pictures/sword_1.png");
     boardTexture.loadFromFile("pictures/Board5.png");
     emojiTexture.loadFromFile("pictures/emojis.png");
+    arrowTexture.loadFromFile("pictures/arrow.png");
 }
 
 int main(int argc, char* argv[]) {
@@ -25,15 +26,16 @@ int main(int argc, char* argv[]) {
     stringstream timeText;
     SDL_Rect playerBox = { 100, 100, 25, 90 };     //change later
     Player player1( &swordTexture, playerBox, 6);
+    Queue queue1 (&arrowTexture, 400, 100);
 
     while (running) {
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_QUIT || (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_q)) running = false;
 
-            if (state == State::Building && e.type == SDL_KEYDOWN && getdir(e.key.keysym) <= 6){
+            if (state == State::Building && e.type == SDL_KEYDOWN && getdir(e.key.keysym) <= 12){
                 player1.pushdir( getdir(e.key.keysym) );
             }
-            else if( state == State::Building && e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_RETURN ){  state = State::Setting;  }
+            else if( state == State::Building && e.type == SDL_KEYDOWN && ( e.key.keysym.sym == SDLK_RETURN || e.key.keysym.sym == SDLK_KP_ENTER )){  state = State::Setting;  }
         }
         if (state == State::Setting) {
             steps = 0;
@@ -45,18 +47,21 @@ int main(int argc, char* argv[]) {
         if ( state == State::Moving){
             player1.walk( steps ); 
             if( steps == stepsMax ) {
-                player1.arrived();
-                steps = 0;
+                player1.arrived();   steps = 0;
                 if( player1.getfront() == 0) state = State::Building; 
                 else state = State::Setting;
             }
             else steps++;
         }
-        // else if( state == State::Rotating){
-        //     player1.turn( steps ); 
-        //     if( steps == stepsMax ) {state = 1; player1.arrived(); }
-        //     else steps++;
-        // }
+        else if( state == State::Rotating){
+            player1.turn( steps ); 
+            if( steps == stepsMax ) {
+                steps = 0; player1.arrived(); 
+                if( player1.getfront() == 0) state = State::Building; 
+                else state = State::Setting;
+                }
+            else steps++;
+        }
         SDL_GetMouseState(&mx, &my);
         SDL_RenderClear(gRenderer);
         SDL_SetRenderDrawColor(gRenderer, 60, 150, 150, 255);
@@ -69,7 +74,7 @@ int main(int argc, char* argv[]) {
         textTexture.loadFromRenderedText(mouseStr, textColor);
         textTexture.render(450, 10);
         //emojiTexture.renderScaled( &smiley );
-        
+        queue1.show(player1);
         SDL_Rect swords = { mx - 12, my - 45, 25, 90 };
         swordTexture.renderScaled(&swords);
         
