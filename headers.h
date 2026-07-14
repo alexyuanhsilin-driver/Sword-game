@@ -16,6 +16,8 @@ SDL_Renderer* gRenderer = NULL;
 TTF_Font* gFont = NULL;
 SDL_Window* window = NULL;
 
+SDL_Color textColor = { 255, 255, 255, 255 }; // White text
+
 int xcoord[40] = {
     0,
     150, 226, 302, 378,
@@ -202,24 +204,32 @@ class Player {
 public:
     int sp, dp; //starting point, destination
     int sa, da; // starting angle, destination
-    Player(LTexture* LT, SDL_Rect r, int Sp) : PLTexture(LT), sp(Sp){
+    Player( SDL_Rect r, int Sp): sp(Sp), dp(Sp){
+        rect.w = r.w; rect.h = r.h;
         rect.x = xcoord[Sp] - rect.w / 2; rect.y = ycoord[Sp] - rect.h / 2;  
-        rect.w = r.w; rect.h = r.h;  ang = 30; dirq.push_back(100000);
-        sa = 0;
+        ang = 30; dirq.push_back(100000);sa = 0;
+        swordrect = {rect.x + 60, rect.y, 20, rect.h};
+        iconTexture.loadFromFile("pictures/bear.png");
+        swordTexture.loadFromFile("pictures/sword_3.png");
     }
     ~Player(){   }
     
     void walk(int steps){
         rect.x = steps *(xcoord[dp]-xcoord[sp] )/stepsMax + xcoord[sp] - rect.w / 2; 
         rect.y = steps *(ycoord[dp]-ycoord[sp] )/stepsMax + ycoord[sp] - rect.h/2 ;      //steps is 1 to 100
+        swordrect.x = rect.x + 60; 
+        swordrect.y = rect.y;     
     }
     void turn(int steps){
         ang = steps *(da-sa)/stepsMax + sa;
     }
     
-    void show(){    if (PLTexture != NULL) {  PLTexture->renderScaledRotated(&rect, ang ); }  }
+    void show(){  
+        center = {steps *(xcoord[dp]-xcoord[sp] )/stepsMax + xcoord[sp] - swordrect.x, steps *(ycoord[dp]-ycoord[sp] )/stepsMax + ycoord[sp] - swordrect.y} ;
+        iconTexture.renderScaledRotated(&rect, ang );
+        swordTexture.renderScaledRotated(&swordrect, ang, NULL, &center); 
+    }
     void pushdir(int d){  dirq.push_back(d); }
-    // returns 0 = nothing valid to do (queue empty or invalid move), 1 = move started, 2 = rotate started
     int set(){
         if (dirq.empty()) return 0;
         int d = dirq.front();
@@ -245,32 +255,57 @@ public:
     void arrived(){ sp = dp;   }
 
 private:
-    LTexture* PLTexture; 
-    SDL_Rect rect;
+    LTexture iconTexture, swordTexture; 
+    SDL_Rect rect, swordrect;
+    SDL_Point center;
     int ang; // 1~6
     deque<int> dirq;
 friend class Queue;
 };
 
+void drawFrame(SDL_Rect rect, SDL_Color color, int thickness = 1) {
+    Uint8 pr, pg, pb, pa;
+    SDL_GetRenderDrawColor(gRenderer, &pr, &pg, &pb, &pa);   // save current color
+
+    SDL_SetRenderDrawColor(gRenderer, color.r, color.g, color.b, color.a);
+    for (int i = 0; i < thickness; i++) {
+        SDL_Rect r = { rect.x - i, rect.y - i, rect.w + 2*i, rect.h + 2*i };
+        SDL_RenderDrawRect(gRenderer, &r);
+    }
+
+    SDL_SetRenderDrawColor(gRenderer, pr, pg, pb, pa);       // restore it
+}
+
 class Queue{
     public:
-    Queue(LTexture* l,  int x, int y):parrowTexture(l){
-        arr[0] = { x, y, squareW, squareW};
+    Queue(int x, int y){
+        PlayerText = {x, y, squareW*5 + 10, 50 }; y+=55;
+        Side = { x, y, squareW*5 + 10, squareW + 20};
+        arr[0] = { x + 10, y + 10, squareW, squareW};
         for(int i=1; i<10; i++){
             arr[i] = arr[i-1];
             arr[i].x = arr[i-1].x + arr[i-1].w;
         }
+        arrowTexture.loadFromFile("pictures/arrow.png");
+        arrow2Texture.loadFromFile("pictures/arrow2.png");
+        playerTextTexture.loadFromRenderedText("player" + to_string(++playerNumber)+ "'s moves:", textColor);
     }
     ~Queue(){   }
     void show( const Player& p ){ 
+        //sideTexture->renderScaled( &Side );
+        playerTextTexture.renderScaled(&PlayerText);
+        drawFrame( Side, {255, 255, 255, 255}, 3);
         if (p.dirq.empty()) return;
         for (size_t i = 0; i < p.dirq.size() && i < 10; i++) {
-            parrowTexture->renderScaledRotated( &arr[i], p.dirq[i]*60 - 120);
-        }
+            int t = p.dirq[i];
+            if( t <=6) arrowTexture.renderScaledRotated( &arr[i], t*60 - 120);
+            else if(t<=12) arrow2Texture.renderScaledRotated( &arr[i], t*60 - 120);
+        } 
     }
     
 private:
-    SDL_Rect arr[10];
     const int squareW = 50, squareH = 50;
-    LTexture *parrowTexture;
+    static inline int playerNumber;
+    SDL_Rect arr[10], Side, PlayerText;
+    LTexture arrowTexture, arrow2Texture, playerTextTexture;
 };
